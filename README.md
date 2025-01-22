@@ -1,4 +1,4 @@
-# **Telegram BTC Price Bot**
+# **Cryptobot**
 
 This is a Telegram bot that uses the Binance API to monitor the price of Bitcoin (BTC) and send daily updates to a specific chat. Users can also manually check the current BTC price using a bot command.
 
