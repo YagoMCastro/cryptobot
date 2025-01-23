@@ -12,7 +12,6 @@ This is a Telegram bot that uses the Binance API to monitor the price of Bitcoin
 ---
 
 ## **Technologies Used**
-- **Python**
 - **Telegram Bot API** (via the `python-telegram-bot` library)
 - **Binance API**
 - **Dotenv** (for secure environment variable management)
