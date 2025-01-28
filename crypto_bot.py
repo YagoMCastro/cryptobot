@@ -40,8 +40,11 @@ def get_crypto_price(symbol: str) -> str:
     except Exception as e:
         return f"Error fetching price: {e}"
 
-# Command handler for /price
+
 async def price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    '''
+    Command handler for /price
+    '''
     args = context.args
     if not args:
         await update.message.reply_text("Usage: /price <symbol>. Example: /price BTCUSDT")
@@ -51,7 +54,6 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = get_crypto_price(symbol)
     await update.message.reply_text(message)
 
-# Function to fetch BTC price (used for daily notifications)
 def get_btc_price() -> float:
     get_crypto_price('BTCUSDT')
 
@@ -71,7 +73,6 @@ async def send_daily_btc_price(application):
     except Exception as e:
         print(f"Error sending daily BTC price: {e}")
 
-# Schedule daily messages
 def schedule_daily_message(application):
     schedule.every().day.at("09:00").do(
         lambda: application.create_task(send_daily_btc_price(application))
@@ -89,31 +90,43 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 def list_binance_cryptos() -> str:
     """
-    Fetches the first 20 trading pair symbols from the Binance API and provides a link to the full list.
-
+    Fetches the first 20 cryptocurrencies available on Binance
+    and formats them as 'CoinName - Symbol'.
+    
     Returns:
-        str: A formatted message containing the first 20 cryptos following its symbols and the API link.
+        str: A formatted message listing the first 20 cryptocurrencies.
     """
     BINANCE_API_DOC = "https://binance-docs.github.io/apidocs/spot/en/#exchange-information"
     try:
+        # Make a request to the Binance API
         response = requests.get(BINANCE_API_INFO_URL)
         response.raise_for_status()  # Raise exception for HTTP errors
         data = response.json()
 
-        # Extract the first 20 trading pairs
-        symbols = [
-            f"{symbol_info['baseAsset']} - {symbol_info['symbol']}"
-            for symbol_info in data["symbols"][:20]
-        ]
+        # Get the first 20 base assets and their symbols
+        unique_cryptos = []
+        for symbol_info in data["symbols"]:
+            base_asset = symbol_info["baseAsset"]
+            symbol = symbol_info["symbol"]
 
-        # Format the response
-        formatted_symbols = "\n".join(symbols)
+            # Avoid duplicates in the list (e.g., BTC appears in multiple trading pairs)
+            if base_asset not in unique_cryptos:
+                unique_cryptos.append(f"{base_asset}")
+            
+            # Stop after collecting 20 unique coins
+            if len(unique_cryptos) == 20:
+                break
+
+        # Format the response message
+        formatted_list = "\n".join(unique_cryptos)
         return (
-            f"The first 20 available cryptos:\n\n{formatted_symbols}\n\n"
-            f"Explore the full list of trading pairs here: {BINANCE_API_DOC}"
+            f"Here are the first 20 cryptocurrencies available:\n\n"
+            f"{formatted_list}\n\n"
+            f"For the full list, check the Binance API documentation: {BINANCE_API_DOC}"
         )
+
     except Exception as e:
-        return f"Error fetching symbols: {e}"
+        return f"Error fetching cryptocurrencies: {e}"
 
 async def list_cryptos(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     symbols = list_binance_cryptos()
@@ -127,7 +140,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("chatid", get_chat_id))
     app.add_handler(CommandHandler("btcprice", btc_price))
     app.add_handler(CommandHandler("price", price))
-    app.add_handler(CommandHandler("listsymbols", list_cryptos))
+    app.add_handler(CommandHandler("listcryptos", list_cryptos))
 
     # Start the scheduler in a separate thread
     scheduler_thread = Thread(target=schedule_daily_message, args=(app,), daemon=True)
